@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Polkadot Dot Collector</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/polkadot/12.6.2/bundle-polkadot-api.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/polkadot/12.6.2/bundle-polkadot-extension-dapp.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Arial", sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        user-select: none;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .title {
+        font-size: 32px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        font-size: 16px;
+        color: #666;
+      }
+
+      /* ウォレットセクション */
+      .wallet-section {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        width: 100%;
+        max-width: 800px;
+      }
+
+      .wallet-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .wallet-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .wallet-address {
+        font-size: 14px;
+        color: #666;
+        font-family: monospace;
+      }
+
+      .token-balance {
+        font-size: 24px;
+        font-weight: bold;
+        color: #e6007a;
+      }
+
+      .connect-btn {
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #e6007a 0%, #a2006d 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(230, 0, 122, 0.3);
+      }
+
+      .connect-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(230, 0, 122, 0.4);
+      }
+
+      .connect-btn:disabled {
+        background: #bdc3c7;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .connected-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: #27ae60;
+        color: white;
+        border-radius: 20px;
+        font-size: 14px;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        background: #2ecc71;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+
+      /* ゲームエリア */
+      .game-container {
+        display: flex;
+        gap: 30px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .game-area {
+        position: relative;
+        width: 500px;
+        height: 400px;
+        background: #ffffff;
+        border: 2px solid #ddd;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        background-image: linear-gradient(
+            rgba(0, 0, 0, 0.03) 1px,
+            transparent 1px
+          ),
+          linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+        background-size: 20px 20px;
+      }
+
+      .collection-area {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .collection-box {
+        position: relative;
+        width: 250px;
+        height: 200px;
+        background: #f8f9fa;
+        border: 3px solid #4a90e2;
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .box-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
+      }
+
+      .box-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .dot-count {
+        background: #4a90e2;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 14px;
+        font-weight: bold;
+      }
+
+      .collected-dots {
+        position: relative;
+        width: 100%;
+        height: 120px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 8px;
+        border: 1px dashed #ccc;
+        overflow: hidden;
+      }
+
+      .collected-dot {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: #000;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+      }
+
+      .moving-dot {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: #000;
+        border-radius: 50%;
+        z-index: 100;
+        pointer-events: none;
+      }
+
+      .trash-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .trash-button {
+        padding: 12px 25px;
+        background: #e74c3c;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+      }
+
+      .trash-button:hover {
+        background: #c0392b;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+      }
+
+      .trash-button:disabled {
+        background: #bdc3c7;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .black-hole {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        background: radial-gradient(
+          circle,
+          #000 0%,
+          #222 40%,
+          #444 70%,
+          #666 100%
+        );
+        border-radius: 50%;
+        box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8),
+          0 0 50px rgba(0, 0, 0, 0.5);
+        animation: rotate 10s linear infinite;
+      }
+
+      .black-hole::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        background: #000;
+        border-radius: 50%;
+        box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1);
+      }
+
+      @keyframes rotate {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .falling-dot {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: #000;
+        border-radius: 50%;
+        z-index: 50;
+        pointer-events: none;
+      }
+
+      .dot {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: #000;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+
+      .dot:hover {
+        transform: scale(1.3);
+      }
+
+      .controls {
+        margin-top: 20px;
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        background: #4a90e2;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn:hover {
+        background: #357abd;
+        transform: translateY(-1px);
+      }
+
+      .stats {
+        display: flex;
+        gap: 20px;
+        margin-top: 15px;
+        padding: 15px 25px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .stat {
+        text-align: center;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 5px;
+      }
+
+      .stat-value {
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .reward-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #e6007a 0%, #a2006d 100%);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(230, 0, 122, 0.4);
+        font-weight: bold;
+        animation: slideIn 0.5s ease, slideOut 0.5s ease 2.5s;
+        z-index: 1000;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+      }
+
+      .info-box {
+        background: #fff3cd;
+        border: 2px solid #ffc107;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+        max-width: 800px;
+      }
+
+      .info-box h3 {
+        color: #856404;
+        margin-bottom: 10px;
+      }
+
+      .info-box p {
+        color: #856404;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      @media (max-width: 800px) {
+        .game-container {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .game-area {
+          width: 90vw;
+          max-width: 500px;
+        }
+
+        .wallet-header {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="title">🔴 POLKADOT DOT COLLECTOR</div>
+      <div class="subtitle">Play to Earn - Catch dots and earn DOT tokens!</div>
+    </div>
+
+    <!-- ウォレット接続セクション -->
+    <div class="wallet-section">
+      <div class="wallet-header">
+        <div class="wallet-info">
+          <div id="walletStatus">
+            <button class="connect-btn" onclick="connectWallet()">
+              Connect Polkadot Wallet
+            </button>
+          </div>
+          <div id="walletAddress" class="wallet-address" style="display: none;"></div>
+        </div>
+        <div class="token-balance">
+          <div style="font-size: 14px; color: #666;">Your DOT Tokens</div>
+          <div id="tokenBalance">0.00 DOT</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-container">
+      <div class="game-area" id="gameArea"></div>
+
+      <div class="collection-area">
+        <div class="collection-box">
+          <div class="box-header">
+            <div class="box-title">Collection Box</div>
+            <div class="dot-count" id="dotCount">0</div>
+          </div>
+          <div class="collected-dots" id="collectedDots"></div>
+        </div>
+
+        <div class="trash-section">
+          <button
+            class="trash-button"
+            id="trashButton"
+            onclick="trashAllDots()"
+          >
+            CONVERT TO TOKENS
+          </button>
+          <div class="black-hole" id="blackHole"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" onclick="spawnDot()">Spawn Dot</button>
+      <button class="btn" onclick="spawnMultiple()">Spawn 5 Dots</button>
+      <button class="btn" onclick="clearAllDots()">Clear Game Area</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total Caught</div>
+        <div class="stat-value" id="totalCaught">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Tokens Earned</div>
+        <div class="stat-value" id="totalTrashed">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Active Dots</div>
+        <div class="stat-value" id="activeDots">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Conversion Rate</div>
+        <div class="stat-value">1 Dot = 0.1 DOT</div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <h3>📘 How to Play & Earn</h3>
+      <p>
+        <strong>1. Connect Wallet:</strong> Install Polkadot.js Extension and connect your wallet<br>
+        <strong>2. Catch Dots:</strong> Click on moving dots to collect them<br>
+        <strong>3. Convert to Tokens:</strong> Press "CONVERT TO TOKENS" to earn DOT (1 dot = 0.1 DOT)<br>
+        <strong>4. Future DeFi:</strong> Earned tokens will be stakeable and usable in DeFi protocols!<br><br>
+        <em>Note: This is a demo version. Tokens are simulated for educational purposes.</em>
+      </p>
+    </div>
+
+    <script>
+      // ゲーム状態
+      let collectedDots = [];
+      let activeDots = [];
+      let totalCaught = 0;
+      let totalTrashed = 0;
+      let dotIdCounter = 0;
+
+      // Web3 状態
+      let walletConnected = false;
+      let currentAccount = null;
+      let tokenBalance = 0;
+      let api = null;
+
+      const gameArea = document.getElementById("gameArea");
+      const collectedDotsContainer = document.getElementById("collectedDots");
+      const dotCountElement = document.getElementById("dotCount");
+      const trashButton = document.getElementById("trashButton");
+      const blackHole = document.getElementById("blackHole");
+
+      // Polkadotウォレット接続
+      async function connectWallet() {
+        try {
+          // Polkadot.js Extensionが利用可能かチェック
+          const extensions = await window.injectedWeb3;
+          
+          if (!extensions || !extensions['polkadot-js']) {
+            alert('Polkadot.js Extensionをインストールしてください！\n\nChrome Web Store: https://polkadot.js.org/extension/');
+            window.open('https://polkadot.js.org/extension/', '_blank');
+            return;
+          }
+
+          // アカウントへのアクセスを要求
+          await window.injectedWeb3['polkadot-js'].enable('Dot Collector Game');
+          
+          // アカウントリストを取得
+          const { web3Accounts, web3Enable } = window.polkadotExtensionDapp;
+          await web3Enable('Dot Collector Game');
+          const accounts = await web3Accounts();
+
+          if (accounts.length === 0) {
+            alert('ウォレットにアカウントが見つかりません。Polkadot.js Extensionでアカウントを作成してください。');
+            return;
+          }
+
+          // 最初のアカウントを使用
+          currentAccount = accounts[0];
+          walletConnected = true;
+
+          // UI更新
+          updateWalletUI();
+          showRewardNotification('ウォレット接続成功！', '🎉');
+
+          console.log('Connected account:', currentAccount.address);
+        } catch (error) {
+          console.error('Wallet connection error:', error);
+          alert('ウォレット接続に失敗しました。Polkadot.js Extensionがインストールされているか確認してください。');
+        }
+      }
+
+      // ウォレットUI更新
+      function updateWalletUI() {
+        const statusDiv = document.getElementById('walletStatus');
+        const addressDiv = document.getElementById('walletAddress');
+        
+        if (walletConnected && currentAccount) {
+          statusDiv.innerHTML = `
+            <div class="connected-badge">
+              <div class="status-dot"></div>
+              Connected
+            </div>
+          `;
+          
+          // アドレスを短縮表示
+          const shortAddress = currentAccount.address.slice(0, 6) + '...' + currentAccount.address.slice(-4);
+          addressDiv.textContent = `Address: ${shortAddress}`;
+          addressDiv.style.display = 'block';
+        }
+        
+        updateTokenBalance();
+      }
+
+      // トークン残高更新
+      function updateTokenBalance() {
+        document.getElementById('tokenBalance').textContent = tokenBalance.toFixed(2) + ' DOT';
+      }
+
+      // 報酬通知
+      function showRewardNotification(message, emoji = '💰') {
+        const notification = document.createElement('div');
+        notification.className = 'reward-notification';
+        notification.textContent = `${emoji} ${message}`;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 3000);
+      }
+
+      // ドット生成
+      function spawnDot() {
+        const dot = document.createElement("div");
+        dot.className = "dot";
+        dot.id = "dot-" + dotIdCounter++;
+
+        const maxX = gameArea.clientWidth - 8;
+        const maxY = gameArea.clientHeight - 8;
+
+        const x = Math.random() * maxX;
+        const y = Math.random() * maxY;
+
+        dot.style.left = x + "px";
+        dot.style.top = y + "px";
+
+        dot.addEventListener("click", function (e) {
+          e.preventDefault();
+          collectDot(this);
+        });
+
+        gameArea.appendChild(dot);
+        activeDots.push(dot);
+        updateStats();
+
+        moveDotRandomly(dot);
+      }
+
+      function moveDotRandomly(dot) {
+        if (!dot.parentNode) return;
+
+        const maxX = gameArea.clientWidth - 8;
+        const maxY = gameArea.clientHeight - 8;
+
+        function animate() {
+          if (!dot.parentNode) return;
+
+          const targetX = Math.random() * maxX;
+          const targetY = Math.random() * maxY;
+
+          dot.style.transition = "all 2s ease-in-out";
+          dot.style.left = targetX + "px";
+          dot.style.top = targetY + "px";
+
+          setTimeout(() => {
+            if (dot.parentNode) {
+              animate();
+            }
+          }, 2000);
+        }
+
+        setTimeout(animate, 500);
+      }
+
+      function collectDot(dot) {
+        const movingDot = document.createElement("div");
+        movingDot.className = "moving-dot";
+
+        const dotRect = dot.getBoundingClientRect();
+        const boxRect = collectedDotsContainer.getBoundingClientRect();
+
+        movingDot.style.left = dotRect.left + "px";
+        movingDot.style.top = dotRect.top + "px";
+        movingDot.style.position = "fixed";
+        movingDot.style.zIndex = "1000";
+
+        document.body.appendChild(movingDot);
+
+        setTimeout(() => {
+          movingDot.style.transition =
+            "all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+          movingDot.style.left = boxRect.left + boxRect.width / 2 + "px";
+          movingDot.style.top = boxRect.top + boxRect.height / 2 + "px";
+          movingDot.style.transform = "scale(0.8)";
+        }, 50);
+
+        setTimeout(() => {
+          document.body.removeChild(movingDot);
+          addToCollection();
+        }, 850);
+
+        gameArea.removeChild(dot);
+        const index = activeDots.indexOf(dot);
+        if (index > -1) {
+          activeDots.splice(index, 1);
+        }
+
+        totalCaught++;
+        updateStats();
+      }
+
+      function addToCollection() {
+        const collectedDot = document.createElement("div");
+        collectedDot.className = "collected-dot";
+
+        const maxX = collectedDotsContainer.clientWidth - 6;
+        const maxY = collectedDotsContainer.clientHeight - 6;
+
+        collectedDot.style.left = Math.random() * maxX + "px";
+        collectedDot.style.top = Math.random() * maxY + "px";
+
+        collectedDotsContainer.appendChild(collectedDot);
+        collectedDots.push(collectedDot);
+
+        updateDotCount();
+      }
+
+      function updateDotCount() {
+        dotCountElement.textContent = collectedDots.length;
+        trashButton.disabled = collectedDots.length === 0;
+      }
+
+      function updateStats() {
+        document.getElementById("totalCaught").textContent = totalCaught;
+        document.getElementById("totalTrashed").textContent = totalTrashed;
+        document.getElementById("activeDots").textContent = activeDots.length;
+      }
+
+      // トークンに変換（Trash機能を改良）
+      function trashAllDots() {
+        if (collectedDots.length === 0) return;
+
+        if (!walletConnected) {
+          alert('トークンを獲得するにはウォレットを接続してください！');
+          return;
+        }
+
+        const dotsCount = collectedDots.length;
+        const holeRect = blackHole.getBoundingClientRect();
+        const holeCenterX = holeRect.left + holeRect.width / 2;
+        const holeCenterY = holeRect.top + holeRect.height / 2;
+
+        collectedDots.forEach((dot, index) => {
+          setTimeout(() => {
+            const dotRect = dot.getBoundingClientRect();
+
+            const fallingDot = document.createElement("div");
+            fallingDot.className = "falling-dot";
+            fallingDot.style.left = dotRect.left + "px";
+            fallingDot.style.top = dotRect.top + "px";
+            fallingDot.style.position = "fixed";
+
+            document.body.appendChild(fallingDot);
+
+            setTimeout(() => {
+              fallingDot.style.transition =
+                "all 1.2s cubic-bezier(0.55, 0.055, 0.675, 0.19)";
+              fallingDot.style.left = holeCenterX + "px";
+              fallingDot.style.top = holeCenterY + "px";
+              fallingDot.style.transform = "scale(0) rotate(720deg)";
+              fallingDot.style.opacity = "0";
+            }, 50);
+
+            setTimeout(() => {
+              document.body.removeChild(fallingDot);
+            }, 1250);
+
+            collectedDotsContainer.removeChild(dot);
+          }, index * 100);
+        });
+
+        // トークン報酬を計算（1ドット = 0.1 DOT）
+        const earnedTokens = dotsCount * 0.1;
+        tokenBalance += earnedTokens;
+        
+        totalTrashed += dotsCount;
+        collectedDots = [];
+        updateDotCount();
+        updateStats();
+        updateTokenBalance();
+
+        // 報酬通知
+        showRewardNotification(`+${earnedTokens.toFixed(2)} DOT earned!`);
+      }
+
+      function spawnMultiple() {
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => spawnDot(), i * 200);
+        }
+      }
+
+      function clearAllDots() {
+        activeDots.forEach((dot) => {
+          if (dot.parentNode) {
+            dot.parentNode.removeChild(dot);
+          }
+        });
+        activeDots = [];
+        updateStats();
+      }
+
+      // 初期化
+      updateDotCount();
+      updateStats();
+
+      // 自動でドットを生成
+      setInterval(() => {
+        if (activeDots.length < 3) {
+          spawnDot();
+        }
+      }, 3000);
+
+      // 初回ロード時のメッセージ
+      setTimeout(() => {
+        if (!walletConnected) {
+          showRewardNotification('ウォレットを接続してPlay to Earnを始めよう！', '🎮');
+        }
+      }, 1000);
+    </script>
+  </body>
+</html>
